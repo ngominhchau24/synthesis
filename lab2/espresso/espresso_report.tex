@@ -1,0 +1,123 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage[T1]{fontenc}
+\usepackage[scaled=0.86]{DejaVuSansMono}
+\lstset{basicstyle=\ttfamily\small,columns=fullflexible,breaklines=true}
+
+\title{Reduce--Expand--Irredundant (Espresso) Implementation Notes}
+\author{ASICVerify Synthesis Lab 2}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Goal}
+Implement the Espresso-style optimization loop (slide 19 in the provided PDF) to minimize a Boolean cover represented in PCN (product-of-cubes) form. The loop transforms an initial ON-set cover into a smaller, equivalent cover by alternating three operators: \textbf{Reduce}, \textbf{Expand}, and \textbf{Irredundant}, with a final sparsification step.
+
+\section*{Notation}
+We use standard Espresso terminology:
+\begin{itemize}[nosep]
+  \item A \textbf{cube} is a string over \{0,1,-\} describing a product term over the input variables.
+  \item A \textbf{cover} $F$ is a set/list of cubes representing a sum of products.
+  \item ON, DC, OFF denote the function's on-set, don't-care set, and off-set.
+  \item A cube $a$ \emph{absorbs} cube $b$ if $a \ge b$ component-wise (where \verb|-| is the top element); absorption removes $b$.
+\end{itemize}
+
+\section*{Pseudocode (slide 19)}
+\begin{lstlisting}
+Input: F = ON-SET cover, D = DC-SET cover
+F = Expand(F, D);
+F = Irredundant(F, D);
+repeat
+    cost = |F|;
+    F = Reduce(F, D);
+    F = Expand(F, D);
+    F = Irredundant(F, D);
+until |F| < cost;
+F = Make_Sparse(F);
+\end{lstlisting}
+
+\section*{Repository Layout}
+\begin{itemize}[nosep]
+  \item Lab1 I/O (parsing, truth-table, PLA): \verb|wa/synthesis/lab1/|.
+  \item Espresso implementation: \verb|wa/synthesis/lab2/espresso/algorithm.py|.
+  \item Lab2 runner reusing Lab1 I/O: \verb|wa/synthesis/lab2/main.py|.
+\end{itemize}
+
+\section*{Mapping Pseudocode to Code}
+All function references are canonicalized with file and line anchors as they exist in this repository revision.
+
+\paragraph{Driver (Espresso loop).} \verb|wa/synthesis/lab2/espresso/algorithm.py:155|\newline
+\texttt{espresso\_minimize\_for\_output(inputs\_bits, outputs\_trits, which\_output, max\_iters)} implements the loop:
+\begin{enumerate}[label=\arabic*.,nosep]
+  \item Initialize $F$ as the ON-set cover (list of minterms).
+  \item Build OFF-cover once as primes of OFF (used to constrain expansion).
+  \item Perform \textbf{Expand} then \textbf{Irredundant}.
+  \item Repeat: capture \texttt{cost=|F|}; apply \textbf{Reduce}, \textbf{Expand}, \textbf{Irredundant}; stop when $|F|$ no longer decreases (or \texttt{max\_iters}).
+  \item Apply \textbf{Make\_Sparse}: absorption and uniquing.
+\end{enumerate}
+
+\paragraph{Reduce.} \verb|wa/synthesis/lab2/espresso/algorithm.py:164|\newline
+\texttt{reduce\_cover(F)} computes, for each cube $c\in F$, the set of ON minterms uniquely covered by $c$; it then meets (consensus) those minterms to obtain a reduced cube that still covers them. This never expands a cube; if a cube covers no unique ON minterm it is left for possible removal by \texttt{Irredundant}.
+
+\paragraph{Expand.} \verb|wa/synthesis/lab2/espresso/algorithm.py:183|\newline
+\texttt{expand\_one\_cube(c, OFF\_cover)} uses a blocking-matrix view: rows are literals of $c$, columns are OFF cubes. A cell is 1 when raising that literal would intersect an OFF cube. Selecting a minimum set of rows covering all columns yields the set of literals that must be kept; all others are raised to \verb|-|. We implement a greedy set-cover heuristic over this matrix. Expansion is applied cube-wise to $F$.
+
+\paragraph{Irredundant.} \verb|wa/synthesis/lab2/espresso/algorithm.py:227|\newline
+\texttt{irredundant(F)} builds ON-coverage sets for each cube and removes cubes whose coverage is contained in the union of others.
+
+\paragraph{Make\_Sparse.} Performed at the end of the loop by a pass of absorption (remove any cube absorbed by another) and uniqueness (deduplicate). This corresponds to the \enquote{sparsify} step commonly used after convergence.
+
+\section*{Auxiliary Procedures}
+\begin{itemize}[nosep]
+  \item OFF-cover construction: primes over OFF computed by a small QMC combiner \verb|derive_prime_implicants|. This is used only to constrain expansion.
+  \item Predicates: \verb|implicant_covers_input| and \verb|implicant_covers_implicant| encapsulate coverage/absorption checks.
+\end{itemize}
+
+\section*{Complexity Notes}
+Let $n$ be inputs, $|F|$ current cubes, $|\text{OFF}|$ size of the OFF-cover.
+\begin{itemize}[nosep]
+  \item Reduce: requires building coverage of ON minterms by $F$; worst-case $O(|\text{ON}|\cdot|F|\cdot n)$ membership checks.
+  \item Expand: greedy set-cover over the blocking matrix with at most $n$ rows and $|\text{OFF}|$ columns per cube; $O(n\cdot|\text{OFF}|)$ per cube in practice.
+  \item Irredundant: subset checks on coverage sets; $O(|F|^2)$ set unions in the worst case.
+  \item The loop typically converges in a few iterations on lab-sized inputs.
+\end{itemize}
+
+\section*{Input/Output Interface}
+Lab2 reuses Lab1 I/O. From \verb|wa/synthesis/lab2/main.py|:
+\begin{itemize}[nosep]
+  \item Inputs: sum-of-minterms file with optional don't-cares \verb|d{...}|, number of inputs $N$.
+  \item Output: console truth table, per-output SOP summary, and a PLA generated by \verb|pla.build_full_pla|.
+\end{itemize}
+Example commands:
+\begin{lstlisting}
+# Random spec then minimize
+python wa/synthesis/lab2/main.py random 4 2 0.35 0.15
+
+# Provided spec from Lab1
+python wa/synthesis/lab2/main.py wa/synthesis/lab1/spec.txt 4
+\end{lstlisting}
+
+\section*{Correctness Sketch}
+\begin{itemize}[nosep]
+  \item \textbf{Reduce} preserves coverage of uniquely covered ON minterms by construction.
+  \item \textbf{Expand} respects OFF since kept literals form a hitting set of OFF conflicts; all raised dimensions remain disjoint from OFF cubes.
+  \item \textbf{Irredundant} removes only cubes whose coverage is contained in others, preserving function equivalence.
+  \item The loop monotonically decreases either cube count or literal count in practice; we stop on cube-count stagnation (matching slide 19 \texttt{|F|}).
+\end{itemize}
+
+\section*{Limitations and Simplifications}
+This educational implementation omits advanced Espresso heuristics (\emph{last gasp}, \emph{super-gasp}, exact set-cover, output merging). The blocking-matrix cover uses a greedy heuristic which performs well on lab-sized problems.
+
+\section*{References}
+\begin{itemize}[nosep]
+  \item Course PDF: \emph{Lecture\_5\_Espresso\_v2.pdf} (\verb|wa/synthesis/doc/|).
+  \item R. K. Brayton et al., \emph{Logic Minimization Algorithms for VLSI Synthesis}.
+\end{itemize}
+
+\end{document}
+
