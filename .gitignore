@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Generated files
+output/
+*.md
+!README.md
+!lab*/README.md
+random_spec.txt
+*.sv
+
+# OS
+.DS_Store
+Thumbs.db
