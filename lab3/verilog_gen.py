@@ -149,6 +149,38 @@ class VerilogGenerator:
         elif gate.gate_type == GateType.XNOR:
             f.write(f"    xnor g{index} ({gate.output}, {inputs[0]}, {inputs[1]});\n")
 
+        elif gate.gate_type == GateType.GT:
+            # GT: f > g = f·ḡ = AND(f, NOT(g))
+            # Decompose into: NOT + AND
+            not_wire = f"gt{index}_not"
+            f.write(f"    wire {not_wire};\n")
+            f.write(f"    not g{index}_0 ({not_wire}, {inputs[1]});\n")
+            f.write(f"    and g{index}_1 ({gate.output}, {inputs[0]}, {not_wire});\n")
+
+        elif gate.gate_type == GateType.LT:
+            # LT: f < g = f̄·g = AND(NOT(f), g)
+            # Decompose into: NOT + AND
+            not_wire = f"lt{index}_not"
+            f.write(f"    wire {not_wire};\n")
+            f.write(f"    not g{index}_0 ({not_wire}, {inputs[0]});\n")
+            f.write(f"    and g{index}_1 ({gate.output}, {not_wire}, {inputs[1]});\n")
+
+        elif gate.gate_type == GateType.GTE:
+            # GTE: f ≥ g = f + ḡ = OR(f, NOT(g))
+            # Decompose into: NOT + OR
+            not_wire = f"gte{index}_not"
+            f.write(f"    wire {not_wire};\n")
+            f.write(f"    not g{index}_0 ({not_wire}, {inputs[1]});\n")
+            f.write(f"    or g{index}_1 ({gate.output}, {inputs[0]}, {not_wire});\n")
+
+        elif gate.gate_type == GateType.LTE:
+            # LTE: f ≤ g = f̄ + g = OR(NOT(f), g)
+            # Decompose into: NOT + OR
+            not_wire = f"lte{index}_not"
+            f.write(f"    wire {not_wire};\n")
+            f.write(f"    not g{index}_0 ({not_wire}, {inputs[0]});\n")
+            f.write(f"    or g{index}_1 ({gate.output}, {not_wire}, {inputs[1]});\n")
+
         elif gate.gate_type == GateType.MUX:
             # Decompose MUX into standard cells
             # MUX: out = sel ? a : b
