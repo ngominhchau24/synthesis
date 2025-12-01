@@ -22,6 +22,7 @@ output/
 *.md
 !README.md
 !lab*/README.md
+!REPORT.md
 random_spec.txt
 *.sv
 
