@@ -1,4 +1,13 @@
-# Lab 3: BDD-Based Netlist Generation Report
+LOGIC DESIGN AND SYNTHESIS
+LAB 3 REPORT
+BDD-Based Logic Synthesis
+
+Ngo Minh Chau – 2470212
+Tran Gia Tuan – 2470214
+Dang Phuoc Tien – 2470455
+
+December 1, 2025
+
 
 ## Introduction
 
@@ -528,9 +537,3 @@ This project successfully implements a complete BDD-based synthesis flow from Bo
 5. **Industrial Flow**: Makefile-based automation for practical use
 
 The system demonstrates the theoretical elegance of BDDs combined with practical engineering for hardware synthesis and verification.
-
----
-
-**Author**: Generated with Claude Code
-**Date**: December 1, 2025
-**Course**: Digital Logic Synthesis - Lab 3
