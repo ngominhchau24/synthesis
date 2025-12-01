@@ -476,57 +476,7 @@ Synthesis Complete!
 | Output | Multi-level | Two-level | Two-level |
 | Applications | Verification, synthesis | Academic | Industrial |
 
-### 8. Technical Achievements
-
-**Code Quality**:
-- Total lines of code: ~1,100
-- Modular design: 4 main modules + scripts
-- Comprehensive documentation
-- Error handling and validation
-
-**Performance**:
-- Small functions (3-4 inputs): < 1 second
-- Automatic reduction: ~20-40% node elimination
-- Efficient unique table lookup: O(1)
-
-**Extensibility**:
-- Easy to add new gate types
-- Configurable testbench parameters
-- Pluggable BDD algorithms
-- Multiple output support (framework ready)
-
----
-
-## Project Repository
-
-**GitHub Repository**: https://github.com/ngominhchau24/synthesis
-
-**Branch**: `claude/boolean-to-netlist-bdd-01JgMgdMUQsM6utfjV2U2rnA`
-
-**Clone and Run**:
-```bash
-# Clone repository
-git clone https://github.com/ngominhchau24/synthesis.git
-cd synthesis
-
-# Checkout branch
-git checkout claude/boolean-to-netlist-bdd-01JgMgdMUQsM6utfjV2U2rnA
-
-# Run synthesis and simulation
-cd script
-make SPEC_FILE=../lab3/test_spec.txt N_INPUTS=3
-```
-
-**Recent Commits**:
-1. `6c0a4ef` - Auto-create output directories in synthesis script
-2. `f04d031` - Add Makefile-based simulation flow with configurable testbench name
-3. `eeb7fa5` - Add golden model and co-simulation testbench for verification
-4. `c812641` - Implement complete ITE lookup table with composite gate decomposition
-5. `89df3df` - Use standard cell primitives instead of behavioral operators
-
----
-
-## Conclusion
+## 8. Conclusion
 
 This project successfully implements a complete BDD-based synthesis flow from Boolean function specification to verified gate-level netlist. Key accomplishments include:
 
